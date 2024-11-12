@@ -15,7 +15,7 @@ export class UIPanel extends Application {
         return foundry.utils.mergeObject(super.defaultOptions, {
             id: UIPanel.ID,
             template: `modules/${MODULE_ID}/templates/uipanel.hbs`,
-            classes: ['ui-panel', 'app'],
+            // classes: ['ui-panel', 'app'],
             popOut: UIPanel.POPOUT,
             closeOnSubmit: false,
         })
