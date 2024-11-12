@@ -5,41 +5,34 @@ import { Timekeeper } from './timekeeper.mjs'
 import { MODULE_ID, SETTINGS } from './settings.mjs'
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api
 
-export class UIPanel extends HandlebarsApplicationMixin(ApplicationV2) {
-    static ID = 'jd-et-uipanel'
-    static DEFAULT_OPTIONS = {
-        tag: 'div',
-        classes: ['ui-panel', 'app', '' ],
-        id: UIPanel.ID,
-        window: {
-            frame: false,
-        },
-        actions: {
-            'time-delta': UIPanel.smallJump,
-        },
-    }
-
-    static PARTS = {
-        form: {
-            template: `modules/${MODULE_ID}/templates/uipanel.hbs`,
-        },
-    }
-
+export class UIPanel extends Application {
     #time = {}
-    refresh = foundry.utils.debounce(this.render, 200)
+    refresh = foundry.utils.debounce(this.render, 100)
+    static ID = 'jd-et-uipanel'
+    static POPOUT = false
+
+    static get defaultOptions () {
+        return foundry.utils.mergeObject(super.defaultOptions, {
+            id: UIPanel.ID,
+            template: `modules/${MODULE_ID}/templates/uipanel.hbs`,
+            classes: ['ui-panel', 'app'],
+            popOut: UIPanel.POPOUT,
+            closeOnSubmit: false,
+        })
+    }
 
     init () {
         Hooks.on(Timekeeper.TIME_CHANGE_HOOK, this.timeChangeHandler.bind(this))
-        if (!UIPanel.DEFAULT_OPTIONS.window.frame)
-            this.#insertAppElement('#players')
+        if (!UIPanel.POPOUT) this.#insertAppElement('#players')
     }
 
-    #insertAppElement(target) {
+    #insertAppElement (target) {
         /**
          * This creates a DOM element in the ui-left interface div,
          * in between the canvas controls and the players panel.
          * Technique from Global Progress Clocks.
-         * Shame it doesn't appear to work with ApplicationV2, since it put the UI exactly where I wanted it
+         * Shame it doesn't appear to work with ApplicationV2,
+         * since it put the UI exactly where I wanted it
          * */
         const top = document.querySelector(target)
         if (top) {
@@ -51,20 +44,19 @@ export class UIPanel extends HandlebarsApplicationMixin(ApplicationV2) {
         }
     }
 
+    //** The Time Change Hook Handler */
     timeChangeHandler (data) {
         this.#time = structuredClone(data.time)
         this.#time.days += 1 // display 1-based instead of 0-based
         this.render(true)
     }
 
-    _onRender (context, options) {
-        // const timeButtons = this.element.querySelectorAll('[data-action=time-delta]')
-        // for (const button of timeButtons) {
-        //     button.addEventListener('click', this.testClick.bind(this))
-        // }
+    async activateListeners (html) {
+        super.activateListeners(html)
+        html.find("[data-action=time-delta]").on("click", this.testClick.bind(this))
     }
 
-    _prepareContext (options) {
+    getData () {
         const context = { time: this.#time }
         return context
     }
